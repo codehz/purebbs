@@ -2,27 +2,27 @@
 
 module Utils where
 import           Data.Aeson       (ToJSON, Value (..), object, (.=))
-import           Data.Text        (Text, empty, unpack)
+import           Data.Text.Lazy   (Text)
 import qualified Web.Scotty       ()
 import           Web.Scotty.Trans
 
-convertJson :: (ToJSON a) => Either String a -> Value
+convertJson :: (ToJSON a) => Either Text a -> Value
 convertJson = object . (:[]) . either ("error" .=) ("result" .=)
 
-returnJson :: (ScottyError e, Monad m, ToJSON a) => Either String a -> ActionT e m ()
+returnJson :: (ScottyError e, Monad m, ToJSON a) => Either Text a -> ActionT e m ()
 returnJson = json . convertJson
 
-returnError :: (ScottyError e, Monad m) => String -> ActionT e m ()
+returnError :: (ScottyError e, Monad m) => Text -> ActionT e m ()
 returnError e = returnJson param where
     param = Left e
-    param :: Either String String
+    param :: Either Text Text
 
-finishJson :: (ScottyError e, Monad m, ToJSON a) => Either String a -> ActionT e m ()
+finishJson :: (ScottyError e, Monad m, ToJSON a) => Either Text a -> ActionT e m ()
 finishJson t = do
     returnJson t
     finish
 
-finishError :: (ScottyError e, Monad m) => String -> ActionT e m ()
+finishError :: (ScottyError e, Monad m) => Text -> ActionT e m ()
 finishError e = finishJson param where
     param = Left e
-    param :: Either String String
+    param :: Either Text Text
