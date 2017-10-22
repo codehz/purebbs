@@ -18,7 +18,8 @@ import qualified Data.ByteString.Lazy.Char8           as S8
 import           Data.Maybe
 import qualified Data.Text.Lazy                       as T
 import           Data.Time.Clock.POSIX
-import           Database.Persist.Postgresql          as DB
+import           Database.Persist.Postgresql          ((==.))
+import qualified Database.Persist.Postgresql          as DB
 import           Network.Wai                          (Middleware,
                                                        mapResponseHeaders,
                                                        modifyResponse, pathInfo)
@@ -73,11 +74,22 @@ api cfg = do
     mkapi S.post "login" $ let
         proc username (Just uid) = return . Right . S8.unpack . Auth.generateToken secret =<< Auth.makePayload (uid, username) expired
         proc _ Nothing = return $ Left "Login Failed"
-        check (username, password) = Lib.runDB (selectFirst [Model.UserUsername ==. username, Model.UserPassword ==. password] [] >>= return . fetchId)
-        fetchId = fmap $ fromSqlKey . entityKey
+        check (username, password) = Lib.runDB (DB.selectFirst [Model.UserUsername ==. username, Model.UserPassword ==. password] [] >>= return . fetchId)
+        fetchId = fmap $ DB.fromSqlKey . DB.entityKey
         in do
         username <- T.unpack . T.toLower . T.strip <$> S.param "username"
         password <- S.param "password"
         returnJson =<< S.liftAndCatchIO . proc username =<< check (username, password)
 
     mkrealm S.get "whoami" $ returnJson . Right =<< justCurrentUser
+
+    mkrealm S.get "subforum" $ returnJson . Right =<< Lib.runDB (DB.selectList [] [] :: DB.SqlPersistT IO [DB.Entity Model.Subforum])
+
+    mkrealm S.post "subforum" $ do
+        user <- justCurrentUser
+        unless (Auth.userId user == 1) $ finishError "Permission denied."
+        title <- T.unpack . T.toLower . T.strip <$> S.param "title"
+        desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
+        time <- liftIO getCurrentTime
+        result <- Lib.runDB (DB.insertUnique $ Model.Subforum title desc time)
+        returnJson $ maybe (Left "Create Failed") Right result
