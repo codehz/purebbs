@@ -64,7 +64,7 @@ api cfg = do
     S.middleware $ tokenAuth (userKey cfg) authSetting
 
     mkapi S.post "register" $ do
-        username <- T.unpack . T.strip <$> S.param "username"
+        username <- T.unpack . T.toLower . T.strip <$> S.param "username"
         password <- S.param "password"
         time <- liftIO getCurrentTime
         result <- Lib.runDB (DB.insertUnique $ Model.User username password time time)
@@ -76,7 +76,7 @@ api cfg = do
         check (username, password) = Lib.runDB (selectFirst [Model.UserUsername ==. username, Model.UserPassword ==. password] [] >>= return . fetchId)
         fetchId = fmap $ fromSqlKey . entityKey
         in do
-        username <- T.unpack . T.strip <$> S.param "username"
+        username <- T.unpack . T.toLower . T.strip <$> S.param "username"
         password <- S.param "password"
         returnJson =<< S.liftAndCatchIO . proc username =<< check (username, password)
 
