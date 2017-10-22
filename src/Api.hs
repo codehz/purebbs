@@ -40,8 +40,8 @@ withSomeHeader :: Middleware
 withSomeHeader =
     modifyResponse (mapResponseHeaders (("Content-Language", "en-US") :))
 
-mkapi method name = method . capture $ "/api/v1/" ++ name
-mkrealm method name = method . capture $ "/api/v1/realm/" ++ name
+mkapi method name = (method . capture $ "/api/v1/" ++ name) . (`S.rescue` returnError)
+mkrealm method name = (method . capture $ "/api/v1/realm/" ++ name) . (`S.rescue` returnError)
 
 currentUser :: S.ScottyError e => S.ActionT e ConfigM (Maybe Auth.Payload)
 currentUser = do
