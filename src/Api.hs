@@ -12,7 +12,7 @@ import           Utils
 import           AuthMiddleware
 import           Control.Monad.Reader                 (MonadIO, MonadReader,
                                                        ReaderT, asks, liftIO,
-                                                       runReaderT, unless)
+                                                       runReaderT, unless, when)
 import           Control.Monad.Trans.Class            (lift)
 import qualified Data.ByteString.Lazy.Char8           as S8
 import           Data.Maybe
@@ -83,13 +83,31 @@ api cfg = do
 
     mkrealm S.get "whoami" $ returnJson . Right =<< justCurrentUser
 
-    mkrealm S.get "subforum" $ returnJson . Right =<< Lib.runDB (DB.selectList [] [] :: DB.SqlPersistT IO [DB.Entity Model.Subforum])
+    mkrealm S.get "node" $ returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. Nothing] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
 
-    mkrealm S.post "subforum" $ do
+    mkrealm S.post "node" $ do
         user <- justCurrentUser
         unless (Auth.userId user == 1) $ finishError "Permission denied."
         title <- T.unpack . T.toLower . T.strip <$> S.param "title"
         desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
         time <- liftIO getCurrentTime
-        result <- Lib.runDB (DB.insertUnique $ Model.Subforum title desc time)
+        result <- Lib.runDB (DB.insertUnique $ Model.Node title desc Nothing time)
+        returnJson $ maybe (Left "Create Failed") Right result
+
+    mkrealm S.get "node/:parent" $ do
+        parentName <- S.param "parent"
+        parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
+        when (isNothing parent) $ finishError "Node is not exist."
+        returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. (DB.entityKey <$> parent)] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
+
+    mkrealm S.post "node/:parent" $ do
+        user <- justCurrentUser
+        unless (Auth.userId user == 1) $ finishError "Permission denied."
+        parentName <- S.param "parent"
+        parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
+        when (isNothing parent) $ finishError "Node is not exist."
+        title <- T.unpack . T.toLower . T.strip <$> S.param "title"
+        desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
+        time <- liftIO getCurrentTime
+        result <- Lib.runDB (DB.insertUnique $ Model.Node title desc (DB.entityKey <$> parent) time)
         returnJson $ maybe (Left "Create Failed") Right result

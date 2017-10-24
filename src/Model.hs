@@ -22,16 +22,17 @@ User
     etime UTCTime default=now()
     UniqueUsername username
     deriving Show
-Subforum json
-    title String
+Node json
+    name String
     description String
+    parent NodeId Maybe
     ctime UTCTime default=now()
-    UniqueSubforumName title
+    UniqueNodeName name
     deriving Show
 Article json
     title String
     authorId UserId
-    subforum SubforumId
+    node NodeId
     content String
     ctime UTCTime default=now()
     etime UTCTime default=now()
