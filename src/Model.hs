@@ -37,6 +37,7 @@ Article json
     node NodeId
     type ArticleType
     content String
+    points Double
     ctime UTCTime default=now()
     etime UTCTime default=now()
     deriving Show
