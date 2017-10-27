@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass  #-}
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -8,9 +9,6 @@ import           Database.Persist.TH
 import           GHC.Generics
 
 data ArticleType = LinkShare | ImageShare | NormalArticle
-    deriving (Generic, Show, Read, Eq)
-
-instance ToJSON ArticleType where
-instance FromJSON ArticleType
+    deriving (Generic, Show, Read, ToJSON, FromJSON, Eq)
 
 derivePersistField "ArticleType"
