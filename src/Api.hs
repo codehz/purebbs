@@ -111,3 +111,7 @@ api cfg = do
         time <- liftIO getCurrentTime
         result <- Lib.runDB (DB.insertUnique $ Model.Node title desc (DB.entityKey <$> parent) time)
         returnJson $ maybe (Left "Create Failed") Right result
+
+    mkrealm S.get "messages" $ do
+        user <- justCurrentUser
+        returnJson . Right =<< Lib.runDB (DB.selectList [Model.MessageQueueUser ==. (DB.toSqlKey $ Auth.userId user)] [])
