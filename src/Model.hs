@@ -10,11 +10,14 @@
 {-# LANGUAGE TypeFamilies               #-}
 module Model where
 
+import           Data.Int
 import           Data.Time
 import           Database.Persist    ()
 import           Database.Persist.TH
 
 import           ArticleType
+import           FollowType
+import           MessageItem
 
 share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
@@ -24,6 +27,17 @@ User
     etime UTCTime default=now()
     UniqueUsername username
     deriving Show
+Follow json
+    user UserId
+    followType FollowType
+    followTarget Int64
+    ctime UTCTime default=now()
+MessageQueue json
+    user UserId
+    sender Int64
+    item MessageItem
+    read Bool
+    ctime UTCTime default=now()
 Node json
     name String
     description String

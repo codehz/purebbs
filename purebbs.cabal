@@ -16,7 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib, Api, Model
-  other-modules:       Auth, AuthMiddleware, Utils, ArticleType
+  other-modules:       Auth
+                     , AuthMiddleware
+                     , Utils
+                     , ArticleType
+                     , MessageItem
+                     , FollowType
   build-depends:       base >= 4.7 && < 5
                      , scotty
                      , persistent
