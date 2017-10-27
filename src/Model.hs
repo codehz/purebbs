@@ -14,6 +14,8 @@ import           Data.Time
 import           Database.Persist    ()
 import           Database.Persist.TH
 
+import           ArticleType
+
 share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
     username String
@@ -33,6 +35,7 @@ Article json
     title String
     authorId UserId
     node NodeId
+    type ArticleType
     content String
     ctime UTCTime default=now()
     etime UTCTime default=now()
