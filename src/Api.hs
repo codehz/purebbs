@@ -152,3 +152,8 @@ api cfg = do
     mkrealm S.get "messages" $ do
         user <- justCurrentUser
         returnJson . Right =<< Lib.runDB (DB.selectList [Model.MessageQueueUser ==. (DB.toSqlKey $ Auth.userId user)] [])
+
+    mkrealm S.put "messages/:id" $ do
+        user <- justCurrentUser
+        msgid <- S.param "id"
+        returnJson . Right =<< Lib.runDB (DB.updateWhereCount [Model.MessageQueueUser ==. (DB.toSqlKey $ Auth.userId user), Model.MessageQueueId ==. (DB.toSqlKey msgid)] [Model.MessageQueueRead =. True])
