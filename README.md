@@ -15,6 +15,7 @@ POST    login
 
 /api/v1/realm: (need login)
 GET     whoami
+PUT     user
 GET     node
 POST    node
 GET     node/:node
