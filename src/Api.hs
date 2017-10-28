@@ -64,6 +64,10 @@ api cfg = let
         node <- Lib.runDB (DB.getBy $ Model.UniqueNodeName name)
         when (isNothing node) $ finishError "The node is not exist."
         return $ fromJust node
+    fetchUser name = do
+        user <- Lib.runDB (DB.getBy $ Model.UniqueUsername name)
+        when (isNothing user) $ finishError "The user is not exist."
+        return $ fromJust user
     in do
     S.middleware $ withSomeHeader
     S.middleware $ logStdoutDev
@@ -176,6 +180,12 @@ api cfg = let
         node <- fetchNode nodeName
         nodes <- Lib.runDB $ fetchAllNode [node]
         returnJson . Right =<< Lib.runDB (DB.selectList [Model.ArticleNode <-. (fmap DB.entityKey nodes)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+
+    mkrealm S.get "list/user/:user" $ do
+        userName <- S.param "user"
+        begin <- S.param "begin"
+        targetUser <- fetchUser userName
+        returnJson . Right =<< Lib.runDB (DB.selectList [Model.ArticleAuthorId ==. (DB.entityKey targetUser)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
 
     mkrealm S.post "article" $ do
         user <- justCurrentUser
