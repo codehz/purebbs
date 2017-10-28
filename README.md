@@ -1,5 +1,5 @@
 <p align="center">
-![https://github.com/codehz/purebbs](https://github.com/codehz/purebbs/raw/master/logo.svg)
+<img src=https://gitcdn.xyz/repo/codehz/purebbs/master/logo.svg>
 <h3 align="center">Pure BBS</h3>
 </p>
 <p align="center">
