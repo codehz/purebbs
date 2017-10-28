@@ -157,3 +157,7 @@ api cfg = do
         user <- justCurrentUser
         msgid <- S.param "id"
         returnJson . Right =<< Lib.runDB (DB.updateWhereCount [Model.MessageQueueUser ==. (DB.toSqlKey $ Auth.userId user), Model.MessageQueueId ==. (DB.toSqlKey msgid)] [Model.MessageQueueRead =. True])
+
+    mkrealm S.get "list" $ do
+        begin <- S.param "begin"
+        returnJson . Right =<< Lib.runDB (DB.selectList [] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
