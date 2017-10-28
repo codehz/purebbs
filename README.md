@@ -1,5 +1,11 @@
-# purebbs
-It is under development.
+<p align="center">
+![https://github.com/codehz/purebbs](https://github.com/codehz/purebbs/raw/master/logo.svg)
+<h3 align="center">Pure BBS</h3>
+</p>
+<p align="center">
+A simple bulletin board system writen by Haskell.<br>
+<b>The project is not yet complete</b>
+</p>
 
 ## API design
 ```

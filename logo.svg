@@ -1,0 +1,60 @@
+<svg version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    width="200"
+    height="60"
+    viewBox="0 0 200 60"
+    font-family='Zilla Slab'>
+    <symbol id="arrow" viewBox="0 0 7 2" preserveAspectRatio="none">
+        <path d="M 0 0 H 3 L 7 1 L 3 2 H 0 L 4 1 Z"/>
+    </symbol>
+    <symbol id="arrow2" viewBox="0 0 11 2" preserveAspectRatio="none">
+        <path d="M 0 0 H 3 L 11 2 H 8 Z"/>
+        <path d="M 4 1 H 7 L 3 2 H 0 Z"/>
+    </symbol>
+    <symbol id="haskell" viewBox="0 0 17 24" preserveAspectRatio="none">
+        <use width="7" height="24" href="#arrow" transform="translate(-7)">
+            <animateTransform begin=".5" attributeName="transform" type="translate" from="-7" to="0" fill="freeze" dur=".2"/>
+        </use>
+        <use x="4" width="11" height="24" href="#arrow2" />
+        <clipPath id="sq">
+            <path d="M 16 24 L 18 24 V 0 H 8"/>
+        </clipPath>
+        <rect y="7" width="0" height="4" clip-path="url(#sq)">
+            <animate begin=".4" attributeName="width" from="0" to="17" fill="freeze" dur=".5" />
+        </rect>
+        <rect y="13" width="0" height="4" clip-path="url(#sq)">
+            <animate begin=".4" attributeName="width" from="0" to="17" fill="freeze" dur=".5" />
+        </rect>
+    </symbol>
+
+    <clipPath id="main-clip">
+        <rect width="0" height="60">
+            <animate attributeName="width" from="0" to="80" fill="freeze" dur=".3"/>
+        </rect>
+    </clipPath>
+
+    <clipPath id="purebbs-clip">
+        <rect x="82" width="0" height="38">
+            <animate begin="1.5" attributeName="width" from="0" to="118" fill="freeze" dur=".4"/>
+        </rect>
+    </clipPath>
+
+    <clipPath id="haskell-clip">
+        <rect x="82" y="40" width="0" height="20">
+            <animate begin="2.2" attributeName="width" from="0" to="43" fill="freeze" dur=".2"/>
+        </rect>
+    </clipPath>
+
+    <rect width="0" height="60">
+        <animate attributeName="width" from="0" to="80" fill="freeze" dur=".3"/>
+    </rect>
+    <rect fill="black" x="82" width="0" height="38">
+        <animate begin="1" attributeName="width" from="0" to="118" fill="freeze" dur=".4"/>
+    </rect>
+    <text fill="white" x="84" y="29" font-size="30" textLength="114" lengthAdjust="spacingAndGlyphs" clip-path="url(#purebbs-clip)">Pure BBS</text>
+    <rect fill="black" x="82" y="40" width="0" height="20">
+        <animate begin="2" attributeName="width" from="0" to="43" fill="freeze" dur=".2"/>
+    </rect>
+    <text fill="white" x="84" y="54" font-size="12" textLength="39" lengthAdjust="spacingAndGlyphs" clip-path="url(#haskell-clip)">Haskell</text>
+    <use fill="white" x="6" y="6" width="68" height="48" href="#haskell" clip-path="url(#main-clip)" />
+</svg>
