@@ -8,36 +8,34 @@ A simple bulletin board system writen by Haskell.<br>
 </p>
 
 ## API design
-```
-/api/v1:
-POST    register
-POST    login
 
-/api/v1/realm: (need login)
-GET     whoami
-PUT     user
-GET     node
-POST    node
-GET     node/:node
-POST    node/:node
-DELETE  node/:node
-PUT     node/:node
-GET     messages
-PUT     messages/:id
-GET     list
-GET     list/node/:node
-GET     list/user/:user
-GET     list/tag/:tag
-GET     article/:article
-DELETE  article/:article
-PUT     article/:article
-POST    article
-POST    comment
-DELETE  comment
-POST    tag
-PUT     tag
-DELETE  tag
-POST    tag/:article
-DELETE  tag/:article
+### /api/v1:
+- [x] **POST** register
+- [x] **POST** login
 
-```
+### /api/v1/realm: (need login)
+- [x] **GET**       whoami
+- [x] **PUT**       user
+- [x] **GET**       node
+- [x] **POST**      node
+- [x] **GET**       node/:node
+- [x] **POST**      node/:node
+- [x] **DELETE**    node/:node
+- [x] **PUT**       node/:node
+- [x] **GET**       messages
+- [x] **PUT**       messages/:id
+- [x] **GET**       list
+- [ ] **GET**       list/node/:node
+- [ ] **GET**       list/user/:user
+- [ ] **GET**       list/tag/:tag
+- [ ] **GET**       article/:article
+- [ ] **DELETE**    article/:article
+- [ ] **PUT**       article/:article
+- [x] **POST**      article
+- [ ] **POST**      comment
+- [ ] **DELETE**    comment
+- [ ] **POST**      tag
+- [ ] **PUT**       tag
+- [ ] **DELETE**    tag
+- [ ] **POST**      tag/:article
+- [ ] **DELETE**    tag/:article
