@@ -118,6 +118,13 @@ api cfg = do
         result <- Lib.runDB (DB.insertUnique $ Model.Node title desc (DB.entityKey <$> parent) time)
         returnJson $ maybe (Left "Create Failed") Right result
 
+    mkrealm S.delete "node/:node" $ do
+        user <- justCurrentUser
+        unless (Auth.checkAdmin user) $ finishError "Permission denied."
+        nodeName <- S.param "node"
+        result <- Lib.runDB (DB.deleteCascadeWhere $ [Model.NodeName ==. nodeName])
+        returnJson $ Right True
+
     mkrealm S.get "messages" $ do
         user <- justCurrentUser
         returnJson . Right =<< Lib.runDB (DB.selectList [Model.MessageQueueUser ==. (DB.toSqlKey $ Auth.userId user)] [])
