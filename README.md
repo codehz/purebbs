@@ -24,6 +24,7 @@ DELETE  node/:node
 PUT     node/:node
 GET     messages
 PUT     messages/:id
+GET     list
 GET     list/node/:node
 GET     list/user/:user
 GET     list/tag/:tag
