@@ -63,11 +63,12 @@ Comment json
     deriving Show
 Tag
     name String
-    UniqueName name
+    UniqueTagName name
     deriving Show
 ArticleTag
     article ArticleId
     tag TagId
     adder UserId
+    ctime UTCTime default=now()
     deriving Show
 |]

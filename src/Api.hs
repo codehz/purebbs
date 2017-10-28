@@ -68,6 +68,10 @@ api cfg = let
         user <- Lib.runDB (DB.getBy $ Model.UniqueUsername name)
         when (isNothing user) $ finishError "The user is not exist."
         return $ fromJust user
+    fetchTag name = do
+        tag <- Lib.runDB (DB.getBy $ Model.UniqueTagName name)
+        when (isNothing tag) $ finishError "The tag is not exist."
+        return $ fromJust tag
     in do
     S.middleware $ withSomeHeader
     S.middleware $ logStdoutDev
@@ -186,6 +190,14 @@ api cfg = let
         begin <- S.param "begin"
         targetUser <- fetchUser userName
         returnJson . Right =<< Lib.runDB (DB.selectList [Model.ArticleAuthorId ==. (DB.entityKey targetUser)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+
+    mkrealm S.get "list/tag/:tag" $ do
+        tagName <- S.param "tag"
+        begin <- S.param "begin"
+        targetTag <- fetchTag tagName
+        articleTags <- Lib.runDB (DB.selectList [Model.ArticleTagTag ==. (DB.entityKey targetTag)] [DB.Desc Model.ArticleTagCtime, DB.LimitTo 20, DB.OffsetBy begin])
+        result <- Lib.runDB $ mapM (DB.get . Model.articleTagArticle . DB.entityVal) articleTags
+        returnJson . Right $ result
 
     mkrealm S.post "article" $ do
         user <- justCurrentUser
