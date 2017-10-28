@@ -68,14 +68,13 @@ api cfg = do
         username <- T.unpack . T.toLower . T.strip <$> S.param "username"
         password <- S.param "password"
         time <- liftIO getCurrentTime
-        result <- Lib.runDB (DB.insertUnique $ Model.User username password time time)
+        result <- Lib.runDB (DB.insertUnique $ Model.User username password False time time)
         returnJson $ maybe (Left "Register Failed") Right result
 
     mkapi S.post "login" $ let
-        proc username (Just uid) = return . Right . S8.unpack . Auth.generateToken secret =<< Auth.makePayload (uid, username) expired
+        proc username (Just entity) = return . Right . S8.unpack . Auth.generateToken secret =<< Auth.makePayload (DB.fromSqlKey $ DB.entityKey entity, username, Model.userAdmin $ DB.entityVal entity) expired
         proc _ Nothing = return $ Left "Login Failed"
-        check (username, password) = Lib.runDB (DB.selectFirst [Model.UserUsername ==. username, Model.UserPassword ==. password] [] >>= return . fetchId)
-        fetchId = fmap $ DB.fromSqlKey . DB.entityKey
+        check (username, password) = Lib.runDB (DB.selectFirst [Model.UserUsername ==. username, Model.UserPassword ==. password] [])
         in do
         username <- T.unpack . T.toLower . T.strip <$> S.param "username"
         password <- S.param "password"
@@ -87,7 +86,7 @@ api cfg = do
 
     mkrealm S.post "node" $ do
         user <- justCurrentUser
-        unless (Auth.userId user == 1) $ finishError "Permission denied."
+        unless (Auth.checkAdmin user) $ finishError "Permission denied."
         title <- T.unpack . T.toLower . T.strip <$> S.param "title"
         desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
         time <- liftIO getCurrentTime
@@ -102,7 +101,7 @@ api cfg = do
 
     mkrealm S.post "node/:parent" $ do
         user <- justCurrentUser
-        unless (Auth.userId user == 1) $ finishError "Permission denied."
+        unless (Auth.checkAdmin user) $ finishError "Permission denied."
         parentName <- S.param "parent"
         parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
         when (isNothing parent) $ finishError "Node is not exist."

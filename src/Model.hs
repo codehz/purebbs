@@ -23,6 +23,7 @@ share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll
 User
     username String
     password String
+    admin Bool
     ctime UTCTime default=now()
     etime UTCTime default=now()
     UniqueUsername username
