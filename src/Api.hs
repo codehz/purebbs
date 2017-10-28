@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs             #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Api
     (
@@ -103,7 +104,7 @@ api cfg = do
     mkrealm S.get "node/:parent" $ do
         parentName <- S.param "parent"
         parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
-        when (isNothing parent) $ finishError "Node is not exist."
+        when (isNothing parent) $ finishError "The node is not exist."
         returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. (DB.entityKey <$> parent)] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
 
     mkrealm S.post "node/:parent" $ do
@@ -111,7 +112,7 @@ api cfg = do
         unless (Auth.checkAdmin user) $ finishError "Permission denied."
         parentName <- S.param "parent"
         parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
-        when (isNothing parent) $ finishError "Node is not exist."
+        when (isNothing parent) $ finishError "The node is not exist."
         title <- T.unpack . T.toLower . T.strip <$> S.param "title"
         desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
         time <- liftIO getCurrentTime
@@ -124,6 +125,29 @@ api cfg = do
         nodeName <- S.param "node"
         result <- Lib.runDB (DB.deleteCascadeWhere $ [Model.NodeName ==. nodeName])
         returnJson $ Right True
+
+    mkrealm S.put "node/:node" $ let
+        checkRec self (Just node)
+            | self == Model.nodeParent node = return True
+            | otherwise                     = do
+                parent <- DB.belongsTo Model.nodeParent node
+                checkRec self parent
+        checkRec _ Nothing     = return False
+        in do
+        user <- justCurrentUser
+        unless (Auth.checkAdmin user) $ finishError "Permission denied."
+        nodeName <- S.param "node"
+        title <- S.param "title"
+        desc <- S.param "desc"
+        parentName <- S.param "parent"
+        unless (parentName /= nodeName) $ finishError "Recursive is detected."
+        self <- Lib.runDB (DB.getBy $ Model.UniqueNodeName nodeName)
+        when (isNothing self) $ finishError "The node is not exist."
+        parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
+        hasRec <- Lib.runDB (checkRec (DB.entityKey <$> self) (DB.entityVal <$> parent))
+        when hasRec $ finishError "The node relationship is incorrect."
+        result <- Lib.runDB (DB.updateWhereCount [Model.NodeName ==. nodeName] [Model.NodeName =. title, Model.NodeDescription =. desc, Model.NodeParent =. (DB.entityKey <$> parent)])
+        returnJson $ Right result
 
     mkrealm S.get "messages" $ do
         user <- justCurrentUser
