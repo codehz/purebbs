@@ -16,6 +16,7 @@ import           Control.Monad.Reader        (MonadIO, MonadReader, ReaderT,
                                               asks)
 import           Control.Monad.Trans.Class   (lift)
 import qualified Data.ByteString.Char8       as BS8
+import           Data.Time.Clock.POSIX
 import qualified Data.Vault.Lazy             as V
 import qualified Database.Persist.Postgresql as DB
 import qualified Model
@@ -33,6 +34,8 @@ init :: String -> IO Config
 init constr = do
     pool <- runStdoutLoggingT $ DB.createPostgresqlPool (BS8.pack constr) 10
     DB.runSqlPool doMigrations pool
+    time <- getCurrentTime
+    DB.runSqlPool (DB.insertUnique $ Model.User "admin" "admin" True time time) pool
     userKey <- V.newKey
     return $ Config {connectionPool = pool, userKey = userKey}
 
