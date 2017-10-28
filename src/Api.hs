@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8           as S8
 import           Data.Maybe
 import qualified Data.Text.Lazy                       as T
 import           Data.Time.Clock.POSIX
-import           Database.Persist.Postgresql          ((=.), (==.))
+import           Database.Persist.Postgresql          ((<-.), (=.), (==.))
 import qualified Database.Persist.Postgresql          as DB
 import           Network.Wai                          (Middleware,
                                                        mapResponseHeaders,
@@ -163,6 +163,19 @@ api cfg = let
     mkrealm S.get "list" $ do
         begin <- S.param "begin"
         returnJson . Right =<< Lib.runDB (DB.selectList [] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+
+    mkrealm S.get "list/node/:node" $ let
+        fetchAllNode (node:xs) = do
+            left <- DB.selectList [Model.NodeParent ==. (Just . DB.entityKey $ node)] []
+            right <- fetchAllNode xs
+            return $ node:(left ++ right)
+        fetchAllNode [] = return []
+        in do
+        nodeName <- S.param "node"
+        begin <- S.param "begin"
+        node <- fetchNode nodeName
+        nodes <- Lib.runDB $ fetchAllNode [node]
+        returnJson . Right =<< Lib.runDB (DB.selectList [Model.ArticleNode <-. (fmap DB.entityKey nodes)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
 
     mkrealm S.post "article" $ do
         user <- justCurrentUser
