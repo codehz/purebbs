@@ -14,7 +14,6 @@ import           Control.Monad.Reader                 (MonadIO, MonadReader,
                                                        ReaderT, asks, liftIO,
                                                        runReaderT, unless, when)
 import           Control.Monad.Trans.Class            (lift)
-import           Data.Aeson                           (object, (.=))
 import qualified Data.ByteString.Lazy.Char8           as S8
 import           Data.Maybe
 import qualified Data.Text.Lazy                       as T
@@ -88,7 +87,7 @@ api cfg = do
         oldpass <- S.param "oldpass"
         newpass <- S.param "newpass"
         result <- Lib.runDB (DB.updateWhereCount [Model.UserId ==. (DB.toSqlKey $ Auth.userId user), Model.UserPassword ==. oldpass] [Model.UserPassword =. newpass])
-        returnJson . Right $ object ["count" .= result]
+        returnJson $ Right result
 
     mkrealm S.get "node" $ returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. Nothing] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
 
