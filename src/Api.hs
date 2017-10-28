@@ -58,8 +58,13 @@ justCurrentUser = do
     return $ fromJust vuser
 
 api :: Config -> S.ScottyT T.Text ConfigM ()
-api cfg = do
-    let authSetting = "test" { authIsProtected = protectedResources }
+api cfg = let
+    authSetting = "test" { authIsProtected = protectedResources }
+    fetchNode name = do
+        node <- Lib.runDB (DB.getBy $ Model.UniqueNodeName name)
+        when (isNothing node) $ finishError "The node is not exist."
+        return $ fromJust node
+    in do
     S.middleware $ withSomeHeader
     S.middleware $ logStdoutDev
     S.middleware $ gzip def
@@ -103,20 +108,18 @@ api cfg = do
 
     mkrealm S.get "node/:parent" $ do
         parentName <- S.param "parent"
-        parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
-        when (isNothing parent) $ finishError "The node is not exist."
-        returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. (DB.entityKey <$> parent)] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
+        parent <- fetchNode parentName
+        returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. (Just . DB.entityKey $ parent)] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
 
     mkrealm S.post "node/:parent" $ do
         user <- justCurrentUser
         unless (Auth.checkAdmin user) $ finishError "Permission denied."
         parentName <- S.param "parent"
-        parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
-        when (isNothing parent) $ finishError "The node is not exist."
+        parent <- fetchNode parentName
         title <- T.unpack . T.toLower . T.strip <$> S.param "title"
         desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
         time <- liftIO getCurrentTime
-        result <- Lib.runDB (DB.insertUnique $ Model.Node title desc (DB.entityKey <$> parent) time)
+        result <- Lib.runDB (DB.insertUnique $ Model.Node title desc (Just . DB.entityKey $ parent) time)
         returnJson $ maybe (Left "Create Failed") Right result
 
     mkrealm S.delete "node/:node" $ do
@@ -141,10 +144,9 @@ api cfg = do
         desc <- S.param "desc"
         parentName <- S.param "parent"
         unless (parentName /= nodeName) $ finishError "Recursive is detected."
-        self <- Lib.runDB (DB.getBy $ Model.UniqueNodeName nodeName)
-        when (isNothing self) $ finishError "The node is not exist."
+        self <- fetchNode nodeName
         parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
-        hasRec <- Lib.runDB (checkRec (DB.entityKey <$> self) (DB.entityVal <$> parent))
+        hasRec <- Lib.runDB (checkRec (Just . DB.entityKey $ self) (DB.entityVal <$> parent))
         when hasRec $ finishError "The node relationship is incorrect."
         result <- Lib.runDB (DB.updateWhereCount [Model.NodeName ==. nodeName] [Model.NodeName =. title, Model.NodeDescription =. desc, Model.NodeParent =. (DB.entityKey <$> parent)])
         returnJson $ Right result
@@ -161,3 +163,14 @@ api cfg = do
     mkrealm S.get "list" $ do
         begin <- S.param "begin"
         returnJson . Right =<< Lib.runDB (DB.selectList [] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+
+    mkrealm S.post "article" $ do
+        user <- justCurrentUser
+        title <- S.param "title"
+        nodeName <- S.param "node"
+        atype <- S.param "type"
+        content <- S.param "content"
+        node <- fetchNode nodeName
+        time <- liftIO getCurrentTime
+        result <- Lib.runDB (DB.insert $ Model.Article title (DB.toSqlKey $ Auth.userId user) (DB.entityKey node) (read atype) content time time)
+        returnJson $ Right True
