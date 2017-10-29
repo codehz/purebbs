@@ -54,19 +54,19 @@ mkrealm method name = (method . capture $ "/api/v1/realm/" ++ name) . (`S.rescue
 
 currentUser :: S.ScottyError e => S.ActionT e ConfigM (Maybe Auth.Payload)
 currentUser = do
-    req <- S.request
+    req     <- S.request
     userKey <- lift (asks userKey)
     return $ getUser userKey req
 
 justCurrentUser :: S.ScottyError e => S.ActionT e ConfigM Auth.Payload
 justCurrentUser = do
-    vuser <- currentUser
+    vuser   <- currentUser
     unless (isJust vuser) $ doFinish "Permission Denied"
     return $ fromJust vuser
 
 justAdminUser :: S.ScottyError e => S.ActionT e ConfigM Auth.Payload
 justAdminUser = do
-    user <- justCurrentUser
+    user    <- justCurrentUser
     unless (Auth.checkAdmin user) $ doFinish "Permission Denied"
     return user
 
