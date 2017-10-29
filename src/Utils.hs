@@ -1,28 +1,29 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-module Utils where
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE UndecidableInstances  #-}
+module Utils(doReturn, doFinish) where
 import           Data.Aeson       (ToJSON, Value (..), object, (.=))
 import           Data.Text.Lazy   (Text)
 import qualified Web.Scotty       ()
 import           Web.Scotty.Trans
 
-convertJson :: (ToJSON a) => Either Text a -> Value
-convertJson = object . (:[]) . either ("error" .=) ("result" .=)
+class ToJSON a => DoReturn a where
+    doConvert :: a -> Value
+    doConvert = object . (:[]) . ("result" .=)
+    doReturn :: (ScottyError e, Monad m) => a -> ActionT e m ()
+    doReturn = json . doConvert
+    doFinish :: (ScottyError e, Monad m) => a -> ActionT e m ()
+    doFinish x = do
+        doReturn x
+        finish
 
-returnJson :: (ScottyError e, Monad m, ToJSON a) => Either Text a -> ActionT e m ()
-returnJson = json . convertJson
+instance {-# OVERLAPPING #-} DoReturn Text where
+    doConvert = object . (:[]) . ("error" .=)
 
-returnError :: (ScottyError e, Monad m) => Text -> ActionT e m ()
-returnError e = returnJson param where
-    param = Left e
-    param :: Either Text Text
+instance {-# OVERLAPPING #-} (ToJSON a, ToJSON b) => DoReturn (Either a b) where
+    doConvert = object . (:[]) . either ("error" .=) ("result" .=)
 
-finishJson :: (ScottyError e, Monad m, ToJSON a) => Either Text a -> ActionT e m ()
-finishJson t = do
-    returnJson t
-    finish
-
-finishError :: (ScottyError e, Monad m) => Text -> ActionT e m ()
-finishError e = finishJson param where
-    param = Left e
-    param :: Either Text Text
+instance (ToJSON a) => DoReturn a where
