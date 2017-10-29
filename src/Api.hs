@@ -246,6 +246,11 @@ api cfg = let
         Lib.runDB (DB.insert $ Model.Article title (DB.toSqlKey $ Auth.userId user) (DB.entityKey node) (read atype) content time time)
         doReturn True
 
+    mkrealm S.get "article/:article/comment" $ do
+        articleId   <- S.param "article"
+        begin       <- S.param "begin"
+        doReturn =<< Lib.runDB (mapM buildExt =<< DB.selectList [Model.CommentTarget ==. (DB.toSqlKey articleId)] [DB.Desc Model.CommentCtime, DB.LimitTo 20, DB.OffsetBy begin])
+
     mkrealm S.post "article/:article/comment" $ do
         user        <- justCurrentUser
         articleId   <- S.param "article"

@@ -34,5 +34,27 @@ instance ToJSON ArticleExt where
             , "name" .= nodeName node ]
         , "type" .= articleType articleVal
         , "content" .= articleContent articleVal
-        , "tags" .= tags ] where
+        , "tags" .= tags
+        , "ctime" .= articleCtime articleVal
+        , "etime" .= articleEtime articleVal ] where
             articleVal = entityVal article
+
+newtype CommentExt = CommentExt (Entity Comment, User)
+
+instance ExtBuilder Comment where
+    type Target Comment = CommentExt
+    buildExt comment = do
+        let commentVal = entityVal comment
+        author <- belongsToJust commentAuthor commentVal
+        return $ CommentExt (comment, author)
+
+instance ToJSON CommentExt where
+    toJSON (CommentExt (comment, author)) = object
+        [ "id" .= entityKey comment
+        , "target" .= commentTarget commentVal
+        , "author" .= object
+            [ "id" .= commentAuthor commentVal
+            , "name" .= userUsername author ]
+        , "content" .= commentContent commentVal
+        , "ctime" .= commentCtime commentVal ] where
+            commentVal = entityVal comment
