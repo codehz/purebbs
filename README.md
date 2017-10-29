@@ -29,7 +29,7 @@ A simple bulletin board system writen by Haskell.<br>
 - [x] **GET**       list/user/:user
 - [x] **GET**       list/tag/:tag
 - [x] **GET**       article/:article
-- [ ] **DELETE**    article/:article
+- [x] **DELETE**    article/:article
 - [ ] **PUT**       article/:article
 - [x] **POST**      article
 - [ ] **POST**      comment

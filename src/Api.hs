@@ -67,7 +67,7 @@ justCurrentUser = do
 justAdminUser :: S.ScottyError e => S.ActionT e ConfigM Auth.Payload
 justAdminUser = do
     user <- justCurrentUser
-    unless (Auth.checkAdmin user) $ doFinish "Permission denied."
+    unless (Auth.checkAdmin user) $ doFinish "Permission Denied"
     return user
 
 class DB.PersistEntity target => FetchByName target where
@@ -214,6 +214,14 @@ api cfg = let
         articleId   <- S.param "article"
         article     <- Lib.runDB (DB.getEntity $ DB.toSqlKey articleId) :: S.ActionT T.Text ConfigM (Maybe (DB.Entity Model.Article))
         doReturn . maybe (Left "Not Found") Right =<< Lib.runDB (mapM buildExt article)
+
+    mkrealm S.delete "article/:article" $ do
+        user        <- justCurrentUser
+        articleId   <- S.param "article"
+        article     <- Lib.runDB (DB.get $ DB.toSqlKey articleId)
+        when (isNothing article) $ doFinish "Article Not Found"
+        unless (Auth.checkAdmin user && (DB.fromSqlKey . Model.articleAuthor $ fromJust article) == Auth.userId user) $ doFinish "Permission Denied"
+        Lib.runDB (DB.deleteCascade $ (DB.toSqlKey articleId :: DB.Key Model.Article))
 
     mkrealm S.post "article" $ do
         user        <- justCurrentUser
