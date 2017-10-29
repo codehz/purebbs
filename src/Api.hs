@@ -210,6 +210,11 @@ api cfg = let
         result      <- Lib.runDB (mapM buildExt =<< mapM (DB.getJustEntity . Model.articleTagArticle . DB.entityVal) articleTags)
         doReturn result
 
+    mkrealm S.get "article/:article" $ do
+        articleId   <- S.param "article"
+        article     <- Lib.runDB (DB.getEntity $ DB.toSqlKey articleId) :: S.ActionT T.Text ConfigM (Maybe (DB.Entity Model.Article))
+        doReturn . maybe (Left "Not Found") Right =<< Lib.runDB (mapM buildExt article)
+
     mkrealm S.post "article" $ do
         user        <- justCurrentUser
         title       <- S.param "title"

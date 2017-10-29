@@ -28,7 +28,7 @@ A simple bulletin board system writen by Haskell.<br>
 - [x] **GET**       list/node/:node
 - [x] **GET**       list/user/:user
 - [x] **GET**       list/tag/:tag
-- [ ] **GET**       article/:article
+- [x] **GET**       article/:article
 - [ ] **DELETE**    article/:article
 - [ ] **PUT**       article/:article
 - [x] **POST**      article
