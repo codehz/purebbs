@@ -288,3 +288,11 @@ api cfg = let
         time        <- liftIO getCurrentTime
         tag         <- Lib.runDB (fetchByName tagName)
         doReturn . maybe (Left "Duplicated tag") Right =<< Lib.runDB (DB.insertUnique $ Model.ArticleTag (DB.toSqlKey articleId) (DB.entityKey tag) (DB.toSqlKey $ Auth.userId user) time)
+
+    mkrealm S.delete "article/:article/tag/:tag" $ do
+        user        <- justCurrentUser
+        articleId   <- S.param "article"
+        tagName     <- S.param "tag"
+        tag         <- Lib.runDB (fetchByName tagName)
+        Lib.runDB (DB.deleteBy $ Model.UniqueArticleTag (DB.toSqlKey articleId) (DB.entityKey tag))
+        doReturn True

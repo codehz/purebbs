@@ -39,4 +39,4 @@ A simple bulletin board system writen by Haskell.<br>
 - [x] **PUT**       tag/:tag
 - [x] **DELETE**    tag/:tag
 - [x] **POST**      article/:article/tag/:tag
-- [ ] **DELETE**    article/:article/tag/:tag
+- [x] **DELETE**    article/:article/tag/:tag
