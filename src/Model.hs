@@ -57,7 +57,7 @@ Article json
     deriving Show
 Comment json
     target ArticleId
-    authorId UserId
+    author UserId
     content String
     ctime UTCTime default=now()
     deriving Show

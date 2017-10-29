@@ -218,9 +218,8 @@ api cfg = let
     mkrealm S.delete "article/:article" $ do
         user        <- justCurrentUser
         articleId   <- S.param "article"
-        article     <- Lib.runDB (DB.get $ DB.toSqlKey articleId)
-        when (isNothing article) $ doFinish "Article Not Found"
-        unless (Auth.checkAdmin user && (DB.fromSqlKey . Model.articleAuthor $ fromJust article) == Auth.userId user) $ doFinish "Permission Denied"
+        article     <- Lib.runDB (DB.getJust $ DB.toSqlKey articleId)
+        unless (Auth.checkAdmin user && (DB.fromSqlKey $ Model.articleAuthor article) == Auth.userId user) $ doFinish "Permission Denied"
         Lib.runDB (DB.deleteCascade $ (DB.toSqlKey articleId :: DB.Key Model.Article))
         doReturn True
 
@@ -230,10 +229,9 @@ api cfg = let
         nodeName    <- S.param "node"
         title       <- S.param "title"
         content     <- S.param "content"
-        article     <- Lib.runDB (DB.get $ DB.toSqlKey articleId)
+        article     <- Lib.runDB (DB.getJust $ DB.toSqlKey articleId)
         node        <- Lib.runDB (fetchByName nodeName)
-        when (isNothing article) $ doFinish "Article Not Found"
-        when (Auth.checkAdmin user && (DB.fromSqlKey . Model.articleAuthor $ fromJust article) == Auth.userId user) $ doFinish "Permission Denied"
+        when (Auth.checkAdmin user && (DB.fromSqlKey $ Model.articleAuthor article) == Auth.userId user) $ doFinish "Permission Denied"
         Lib.runDB (DB.update (DB.toSqlKey articleId) [Model.ArticleTitle =. title, Model.ArticleNode =. (DB.entityKey node), Model.ArticleContent =. content])
         doReturn True
 
@@ -245,5 +243,13 @@ api cfg = let
         content     <- S.param "content"
         node        <- Lib.runDB (fetchByName nodeName)
         time        <- liftIO getCurrentTime
-        result      <- Lib.runDB (DB.insert $ Model.Article title (DB.toSqlKey $ Auth.userId user) (DB.entityKey node) (read atype) content time time)
+        Lib.runDB (DB.insert $ Model.Article title (DB.toSqlKey $ Auth.userId user) (DB.entityKey node) (read atype) content time time)
+        doReturn True
+
+    mkrealm S.post "article/:article/comment" $ do
+        user        <- justCurrentUser
+        articleId   <- S.param "article"
+        content     <- S.param "content"
+        time        <- liftIO getCurrentTime
+        Lib.runDB (DB.insert $ Model.Comment (DB.toSqlKey articleId) (DB.toSqlKey $ Auth.userId user) content time)
         doReturn True

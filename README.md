@@ -33,7 +33,7 @@ A simple bulletin board system writen by Haskell.<br>
 - [x] **PUT**       article/:article
 - [x] **POST**      article
 - [ ] **GET**       article/:article/comment
-- [ ] **POST**      article/:article/comment
+- [x] **POST**      article/:article/comment
 - [ ] **DELETE**    comment/:comment
 - [ ] **POST**      tag
 - [ ] **PUT**       tag/:tag
