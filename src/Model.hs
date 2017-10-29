@@ -48,7 +48,7 @@ Node json
     deriving Show
 Article json
     title String
-    authorId UserId
+    author UserId
     node NodeId
     type ArticleType
     content String
@@ -65,7 +65,7 @@ Tag
     name String
     UniqueTagName name
     deriving Show
-ArticleTag
+ArticleTag json
     article ArticleId
     tag TagId
     adder UserId

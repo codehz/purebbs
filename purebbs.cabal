@@ -22,6 +22,7 @@ library
                      , ArticleType
                      , MessageItem
                      , FollowType
+                     , ModelExt
   build-depends:       base >= 4.7 && < 5
                      , scotty
                      , persistent

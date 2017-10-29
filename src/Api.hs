@@ -1,5 +1,6 @@
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 module Api
     (
     api
@@ -8,6 +9,8 @@ module Api
 import           Auth
 import           Lib
 import qualified Model
+import           ModelExt                             (buildExt)
+import qualified ModelExt                             as Model hiding (buildExt)
 import           Utils
 
 import           AuthMiddleware
@@ -57,21 +60,23 @@ justCurrentUser = do
     unless (isJust vuser) $ finishError "Permission Denied"
     return $ fromJust vuser
 
+class DB.PersistEntity target => FetchByName target where
+    uniqueMethod :: String -> DB.Unique target
+    fetchByName :: (DB.PersistEntityBackend target ~ DB.BaseBackend backend, DB.PersistUniqueRead backend) => String -> ReaderT backend IO (DB.Entity target)
+    fetchByName name = fromJust <$> DB.getBy (uniqueMethod name)
+
+instance FetchByName Model.Node where
+    uniqueMethod = Model.UniqueNodeName
+
+instance FetchByName Model.User where
+    uniqueMethod = Model.UniqueUsername
+
+instance FetchByName Model.Tag where
+    uniqueMethod = Model.UniqueTagName
+
 api :: Config -> S.ScottyT T.Text ConfigM ()
 api cfg = let
     authSetting = "test" { authIsProtected = protectedResources }
-    fetchNode name = do
-        node <- Lib.runDB (DB.getBy $ Model.UniqueNodeName name)
-        when (isNothing node) $ finishError "The node is not exist."
-        return $ fromJust node
-    fetchUser name = do
-        user <- Lib.runDB (DB.getBy $ Model.UniqueUsername name)
-        when (isNothing user) $ finishError "The user is not exist."
-        return $ fromJust user
-    fetchTag name = do
-        tag <- Lib.runDB (DB.getBy $ Model.UniqueTagName name)
-        when (isNothing tag) $ finishError "The tag is not exist."
-        return $ fromJust tag
     in do
     S.middleware $ withSomeHeader
     S.middleware $ logStdoutDev
@@ -116,14 +121,14 @@ api cfg = let
 
     mkrealm S.get "node/:parent" $ do
         parentName <- S.param "parent"
-        parent <- fetchNode parentName
+        parent <- Lib.runDB $ fetchByName parentName
         returnJson . Right =<< Lib.runDB (DB.selectList [Model.NodeParent ==. (Just . DB.entityKey $ parent)] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
 
     mkrealm S.post "node/:parent" $ do
         user <- justCurrentUser
         unless (Auth.checkAdmin user) $ finishError "Permission denied."
         parentName <- S.param "parent"
-        parent <- fetchNode parentName
+        parent <- Lib.runDB $ fetchByName parentName
         title <- T.unpack . T.toLower . T.strip <$> S.param "title"
         desc <- T.unpack . T.toLower . T.strip <$> S.param "description"
         time <- liftIO getCurrentTime
@@ -152,7 +157,7 @@ api cfg = let
         desc <- S.param "desc"
         parentName <- S.param "parent"
         unless (parentName /= nodeName) $ finishError "Recursive is detected."
-        self <- fetchNode nodeName
+        self <- Lib.runDB $ fetchByName nodeName
         parent <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
         hasRec <- Lib.runDB (checkRec (Just . DB.entityKey $ self) (DB.entityVal <$> parent))
         when hasRec $ finishError "The node relationship is incorrect."
@@ -170,7 +175,7 @@ api cfg = let
 
     mkrealm S.get "list" $ do
         begin <- S.param "begin"
-        returnJson . Right =<< Lib.runDB (DB.selectList [] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+        returnJson . Right =<< Lib.runDB (mapM buildExt =<< DB.selectList [] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
 
     mkrealm S.get "list/node/:node" $ let
         fetchAllNode (node:xs) = do
@@ -181,22 +186,22 @@ api cfg = let
         in do
         nodeName <- S.param "node"
         begin <- S.param "begin"
-        node <- fetchNode nodeName
+        node <- Lib.runDB $ fetchByName nodeName
         nodes <- Lib.runDB $ fetchAllNode [node]
-        returnJson . Right =<< Lib.runDB (DB.selectList [Model.ArticleNode <-. (fmap DB.entityKey nodes)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+        returnJson . Right =<< Lib.runDB (mapM buildExt =<< DB.selectList [Model.ArticleNode <-. (fmap DB.entityKey nodes)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
 
     mkrealm S.get "list/user/:user" $ do
         userName <- S.param "user"
         begin <- S.param "begin"
-        targetUser <- fetchUser userName
-        returnJson . Right =<< Lib.runDB (DB.selectList [Model.ArticleAuthorId ==. (DB.entityKey targetUser)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
+        targetUser <- Lib.runDB $ fetchByName userName
+        returnJson . Right =<< Lib.runDB (mapM buildExt =<< DB.selectList [Model.ArticleAuthor ==. (DB.entityKey targetUser)] [DB.Desc Model.ArticleEtime, DB.LimitTo 20, DB.OffsetBy begin])
 
     mkrealm S.get "list/tag/:tag" $ do
         tagName <- S.param "tag"
         begin <- S.param "begin"
-        targetTag <- fetchTag tagName
+        targetTag <- Lib.runDB $ fetchByName tagName
         articleTags <- Lib.runDB (DB.selectList [Model.ArticleTagTag ==. (DB.entityKey targetTag)] [DB.Desc Model.ArticleTagCtime, DB.LimitTo 20, DB.OffsetBy begin])
-        result <- Lib.runDB $ mapM (DB.get . Model.articleTagArticle . DB.entityVal) articleTags
+        result <- Lib.runDB $ mapM buildExt =<< mapM (DB.getJustEntity . Model.articleTagArticle . DB.entityVal) articleTags
         returnJson . Right $ result
 
     mkrealm S.post "article" $ do
@@ -205,7 +210,7 @@ api cfg = let
         nodeName <- S.param "node"
         atype <- S.param "type"
         content <- S.param "content"
-        node <- fetchNode nodeName
+        node <- Lib.runDB $ fetchByName nodeName
         time <- liftIO getCurrentTime
         result <- Lib.runDB (DB.insert $ Model.Article title (DB.toSqlKey $ Auth.userId user) (DB.entityKey node) (read atype) content time time)
         returnJson $ Right True
