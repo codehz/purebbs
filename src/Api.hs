@@ -115,8 +115,7 @@ api cfg = let
         user    <- justCurrentUser
         oldpass <- S.param "oldpass"
         newpass <- S.param "newpass"
-        result  <- Lib.runDB (DB.updateWhereCount [Model.UserId ==. (DB.toSqlKey $ Auth.userId user), Model.UserPassword ==. oldpass] [Model.UserPassword =. newpass])
-        doReturn result
+        doReturn =<< Lib.runDB (Count <$> DB.updateWhereCount [Model.UserId ==. (DB.toSqlKey $ Auth.userId user), Model.UserPassword ==. oldpass] [Model.UserPassword =. newpass])
 
     mkrealm S.get "node" $ doReturn =<< Lib.runDB (DB.selectList [Model.NodeParent ==. Nothing] [] :: DB.SqlPersistT IO [DB.Entity Model.Node])
 
@@ -167,8 +166,7 @@ api cfg = let
         parent      <- Lib.runDB (DB.getBy $ Model.UniqueNodeName parentName)
         hasRec      <- Lib.runDB (checkRec (Just . DB.entityKey $ self) (DB.entityVal <$> parent))
         when hasRec $ doFinish "The node relationship is incorrect."
-        result      <- Lib.runDB (DB.updateWhereCount [Model.NodeName ==. nodeName] [Model.NodeName =. title, Model.NodeDescription =. desc, Model.NodeParent =. (DB.entityKey <$> parent)])
-        doReturn result
+        doReturn =<< Lib.runDB (Count <$> DB.updateWhereCount [Model.NodeName ==. nodeName] [Model.NodeName =. title, Model.NodeDescription =. desc, Model.NodeParent =. (DB.entityKey <$> parent)])
 
     mkrealm S.get "messages" $ do
         user    <- justCurrentUser
@@ -276,7 +274,9 @@ api cfg = let
         justAdminUser
         tagName <- S.param "tag"
         name    <- S.param "name"
-        count   <- Lib.runDB (DB.updateWhereCount [Model.TagName ==. tagName] [Model.TagName =. name])
-        if count > 0
-            then doReturn True
-            else doReturn "Not Found"
+        doReturn =<< Lib.runDB (Count <$> DB.updateWhereCount [Model.TagName ==. tagName] [Model.TagName =. name])
+
+    mkrealm S.delete "tag/:tag" $ do
+        justAdminUser
+        tagName <- S.param "tag"
+        doReturn =<< Lib.runDB (Count <$> DB.deleteWhereCount [Model.TagName ==. tagName])
