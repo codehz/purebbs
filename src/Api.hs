@@ -269,5 +269,14 @@ api cfg = let
 
     mkrealm S.post "tag" $ do
         justAdminUser
-        name <- S.param "name"
+        name    <- S.param "name"
         doReturn . maybe (Left "Tag Creating Failed") Right =<< Lib.runDB (DB.insertUnique $ Model.Tag name)
+
+    mkrealm S.put "tag/:tag" $ do
+        justAdminUser
+        tagName <- S.param "tag"
+        name    <- S.param "name"
+        count   <- Lib.runDB (DB.updateWhereCount [Model.TagName ==. tagName] [Model.TagName =. name])
+        if count > 0
+            then doReturn True
+            else doReturn "Not Found"
