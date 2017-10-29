@@ -258,3 +258,11 @@ api cfg = let
         time        <- liftIO getCurrentTime
         Lib.runDB (DB.insert $ Model.Comment (DB.toSqlKey articleId) (DB.toSqlKey $ Auth.userId user) content time)
         doReturn True
+
+    mkrealm S.delete "comment/:comment" $ do
+        user        <- justCurrentUser
+        commentId   <- S.param "comment"
+        comment     <- Lib.runDB (DB.getJust $ DB.toSqlKey commentId)
+        when (Auth.checkAdmin user && (DB.fromSqlKey $ Model.commentAuthor comment) == Auth.userId user) $ doFinish "Permission Denied"
+        Lib.runDB (DB.deleteCascade $ (DB.toSqlKey commentId :: DB.Key Model.Comment))
+        doReturn True
