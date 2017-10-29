@@ -70,5 +70,6 @@ ArticleTag json
     tag TagId
     adder UserId
     ctime UTCTime default=now()
+    UniqueArticleTag article tag
     deriving Show
 |]

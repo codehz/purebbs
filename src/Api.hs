@@ -280,3 +280,11 @@ api cfg = let
         justAdminUser
         tagName <- S.param "tag"
         doReturn =<< Lib.runDB (Count <$> DB.deleteWhereCount [Model.TagName ==. tagName])
+
+    mkrealm S.post "article/:article/tag/:tag" $ do
+        user        <- justCurrentUser
+        articleId   <- S.param "article"
+        tagName     <- S.param "tag"
+        time        <- liftIO getCurrentTime
+        tag         <- Lib.runDB (fetchByName tagName)
+        doReturn . maybe (Left "Duplicated tag") Right =<< Lib.runDB (DB.insertUnique $ Model.ArticleTag (DB.toSqlKey articleId) (DB.entityKey tag) (DB.toSqlKey $ Auth.userId user) time)
