@@ -222,6 +222,20 @@ api cfg = let
         when (isNothing article) $ doFinish "Article Not Found"
         unless (Auth.checkAdmin user && (DB.fromSqlKey . Model.articleAuthor $ fromJust article) == Auth.userId user) $ doFinish "Permission Denied"
         Lib.runDB (DB.deleteCascade $ (DB.toSqlKey articleId :: DB.Key Model.Article))
+        doReturn True
+
+    mkrealm S.put "article/:article" $ do
+        user        <- justCurrentUser
+        articleId   <- S.param "article"
+        nodeName    <- S.param "node"
+        title       <- S.param "title"
+        content     <- S.param "content"
+        article     <- Lib.runDB (DB.get $ DB.toSqlKey articleId)
+        node        <- Lib.runDB (fetchByName nodeName)
+        when (isNothing article) $ doFinish "Article Not Found"
+        when (Auth.checkAdmin user && (DB.fromSqlKey . Model.articleAuthor $ fromJust article) == Auth.userId user) $ doFinish "Permission Denied"
+        Lib.runDB (DB.update (DB.toSqlKey articleId) [Model.ArticleTitle =. title, Model.ArticleNode =. (DB.entityKey node), Model.ArticleContent =. content])
+        doReturn True
 
     mkrealm S.post "article" $ do
         user        <- justCurrentUser
