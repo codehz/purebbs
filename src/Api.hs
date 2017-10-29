@@ -266,3 +266,8 @@ api cfg = let
         when (Auth.checkAdmin user && (DB.fromSqlKey $ Model.commentAuthor comment) == Auth.userId user) $ doFinish "Permission Denied"
         Lib.runDB (DB.deleteCascade $ (DB.toSqlKey commentId :: DB.Key Model.Comment))
         doReturn True
+
+    mkrealm S.post "tag" $ do
+        justAdminUser
+        name <- S.param "name"
+        doReturn . maybe (Left "Tag Creating Failed") Right =<< Lib.runDB (DB.insertUnique $ Model.Tag name)
