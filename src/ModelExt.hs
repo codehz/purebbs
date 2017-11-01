@@ -3,7 +3,6 @@
 module ModelExt(buildExt) where
 
 import           Data.Aeson
-import           Data.Text
 import           Database.Persist.Postgresql
 import           Model
 
@@ -42,7 +41,7 @@ instance ExtBuilder Article where
         let articleVal = entityVal article
         author  <- belongsToJust articleAuthor articleVal
         node    <- belongsToJust articleNode articleVal
-        tags    <- mapM buildExt =<< selectList [ArticleTagArticle ==. (entityKey article)] []
+        tags    <- mapM buildExt =<< selectList [ArticleTagArticle ==. entityKey article] []
         return $ ArticleExt (article, author, node, tags)
 
 instance ToJSON ArticleExt where

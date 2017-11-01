@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE UndecidableInstances       #-}
-module Utils(doReturn, doFinish, Count(..)) where
+module Utils(DoReturn(doReturn, doFinish), Count(..)) where
 import           Data.Aeson       (ToJSON, Value (..), object, (.=))
 import           Data.Int
 import           Data.Text.Lazy   (Text)

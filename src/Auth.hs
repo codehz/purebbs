@@ -14,9 +14,6 @@ import           GHC.Generics
 header :: T.ByteString
 header = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9."
 
-headerLength :: Integer
-headerLength = fromIntegral . T.length $ header
-
 splCh :: T.ByteString
 splCh = T8.singleton '.'
 
@@ -52,7 +49,7 @@ generateToken secret payload = T.concat [signedPart, splCh, signature] where
     signature = Base64.encode . SHA.bytestringDigest $ SHA.hmacSha256 secret signedPart
 
 makePayload :: (Int64, String, Bool) -> Int64 -> IO Payload
-makePayload (id, name, admin) offset = Payload id name admin <$> timeOffset offset
+makePayload (_id, _name, _admin) offset = Payload _id _name _admin <$> timeOffset offset
 
 decodeToken :: T.ByteString -> T.ByteString -> Either String Payload
 decodeToken secret token = maybe (Left "Not a valid header") tryDecode (T8.stripPrefix header token) where
@@ -62,7 +59,7 @@ decodeToken secret token = maybe (Left "Not a valid header") tryDecode (T8.strip
         stail d = if T.null d
             then T.empty
             else T.tail d
-    signedPart part = T.concat $ [header, bodyPart part]
+    signedPart part = T.concat [header, bodyPart part]
     signedPart :: T.ByteString -> T.ByteString
     realSignature part = Base64.encode . SHA.bytestringDigest $ SHA.hmacSha256 secret $ signedPart part
     decodeBody = Base64.decode . bodyPart

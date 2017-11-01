@@ -9,7 +9,7 @@ import qualified Data.ByteString.Lazy    as SL
 import           Data.Either.Combinators
 import           Data.String             (IsString (..))
 import qualified Data.Vault.Lazy         as V
-import           Data.Word8              (isSpace, toLower, _colon)
+import           Data.Word8              (isSpace, toLower)
 import           Network.HTTP.Types      (hAuthorization, hContentType,
                                           status401)
 import           Network.Wai
@@ -27,9 +27,9 @@ tokenAuth key AuthSettings{..} app req sendResponse = do
             vault' = V.insert key user (vault req)
         proc (Right Nothing) = app req sendResponse
         proc (Left reason) = authOnNoAuth authRealm (S8.pack reason) req sendResponse
-        check = case (lookup hAuthorization $ requestHeaders req) >>= extractBearerAuth of
+        check = case lookup hAuthorization (requestHeaders req) >>= extractBearerAuth of
             Nothing -> return $ Left "Need login"
-            Just token -> mapRight Just <$> (getValidUser $ decodeToken (SL.fromStrict authSecret) (SL.fromStrict token))
+            Just token -> mapRight Just <$> getValidUser (decodeToken (SL.fromStrict authSecret) (SL.fromStrict token))
 
 getUser :: V.Key Payload -> Request -> Maybe Payload
 getUser = (. vault) . V.lookup
@@ -45,14 +45,14 @@ instance IsString AuthSettings where
     fromString s = AuthSettings
         { authRealm = fromString s
         , authSecret = "secret"
-        , authOnNoAuth = \realm error _req f -> f $ responseLBS
+        , authOnNoAuth = \realm err _req f -> f $ responseLBS
             status401
             [ (hContentType, "application/json")
-            , ("WWW-Authenticate", S.concat $
+            , ("WWW-Authenticate", S.concat
                 [ "Bearer realm=\""
                 , realm
                 , "\", error=\"invalid_token\", error_description=\""
-                , error
+                , err
                 , "\""
                 ])
             ]

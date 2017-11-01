@@ -32,12 +32,12 @@ doMigrations = DB.runMigration Model.migrateAll
 
 init :: String -> IO Config
 init constr = do
-    pool <- runStdoutLoggingT $ DB.createPostgresqlPool (BS8.pack constr) 10
-    DB.runSqlPool doMigrations pool
-    time <- getCurrentTime
-    DB.runSqlPool (DB.insertUnique $ Model.User "admin" "admin" True time time) pool
-    userKey <- V.newKey
-    return $ Config {connectionPool = pool, userKey = userKey}
+    time    <- getCurrentTime
+    pool    <- runStdoutLoggingT $ DB.createPostgresqlPool (BS8.pack constr) 10
+    _       <- DB.runSqlPool doMigrations pool
+    _       <- DB.runSqlPool (DB.insertUnique $ Model.User "admin" "admin" True time time) pool
+    theKey  <- V.newKey
+    return Config{connectionPool = pool, userKey = theKey}
 
 runDB :: S.ScottyError e => DB.SqlPersistT IO a -> S.ActionT e ConfigM a
 runDB query = lift (asks connectionPool) >>= (S.liftAndCatchIO . DB.runSqlPool query)
